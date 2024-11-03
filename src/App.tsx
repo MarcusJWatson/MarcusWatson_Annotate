@@ -50,11 +50,12 @@ function App() {
   color: #F0F0F0;
 */
 
-function Header(){
+export function Header(){
+  const nav = useNavigate();
 
   return(
     <div className='SiteHeader'>
-      <h1>Annotate</h1>
+      <h1 onClick={()=>{nav("/")}}>Annotate</h1>
       <SearchBar />
       <ProfileNav/>
     </div>
@@ -88,7 +89,7 @@ function ProfileNav(){
         auth && 
         <>
           <button onClick={()=>nav(`/Person/${faker.person.firstName()}`)}>My Books</button>
-          <button>Create Book</button>
+          <button  onClick={()=>nav(`/Editor`)}>Create Book</button>
         </> 
       }
 
@@ -134,7 +135,7 @@ function TotalDisplay(){
 
 }
 
-function Tag({text}:{text:string}) {
+export function Tag({text}:{text:string}) {
   return (
     <div className='Tag'>
       <TagIcon size={16} />
@@ -149,12 +150,15 @@ function Tag({text}:{text:string}) {
 export function Card() {
   // Generate random rating between 1-5
   const rating = Number((Math.random() * 4 + 1).toFixed(1));
-  
+  const nav = useNavigate();
+
+  const name = faker.lorem.words(2);
+
   return (
-    <div className='Card'>
+    <div className='Card' onClick={()=>{nav(`/Book/${faker.lorem.words(2)}`)}}>
       <img src={faker.image.urlPicsumPhotos()} alt="card image" />
       <div className='CardContent'>
-        <h3>{faker.lorem.words(2)}</h3>
+        <h3>{name}</h3>
         
         <div className='RatingContainer'>
 
@@ -174,7 +178,7 @@ export function Card() {
   );
 }
 
-function RowCard(){
+export function RowCard(){
 
   const rowSize = 7;
 
@@ -187,7 +191,7 @@ function RowCard(){
   );
 }
 
-function RowCardWithTag(){
+export function RowCardWithTag(){
 
   return(
     <div className='RowWithTag'>

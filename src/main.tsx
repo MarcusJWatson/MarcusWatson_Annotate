@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MyPage, ViewBook } from './Template.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,12 +14,12 @@ createRoot(document.getElementById('root')!).render(
         <Route path='/' element={ <App/> } />
 
         <Route path='/Results' />
-        <Route path='/Person/:person' />
+        <Route path='/Person/:person' element={<MyPage />} />
 
-        <Route path='/Book/:book' />
+        <Route path='/Book/:book' element={<ViewBook />}/>
         <Route path='/Book/:book/:chapter' />
 
-        <Route path='/Editor' />
+        <Route path='/Editor/:name' />
 
 
       </Routes>

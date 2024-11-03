@@ -42,6 +42,8 @@
   >h1{
     margin-left: 3%;
     margin-right: 3rem;
+    cursor: pointer;
+
   }
 }
 
@@ -347,4 +349,120 @@
     font-size: xx-large;
   }
 
+}
+
+.personProfile{
+  display: flex;
+  flex-direction: column;
+  h1,h2{
+    margin: 0%;
+    padding: 0%;
+  }
+  padding-left: 3rem;
+  margin-top: 10rem;
+
+}
+
+.myBookArray{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  row-gap: 3rem;
+  align-items: center;
+  >:nth-child(n){
+    margin-right: 2.5rem;
+  }
+}
+
+.BookPage{
+  display: flex;
+  flex-direction: column;
+  h1,h2{
+    margin: 0%;
+    padding: 0%;
+  }
+  padding-left: 3rem;
+  padding-right: 3rem;
+  margin-top: 10rem;
+
+}
+
+.BookBreakDown{
+  width: 100%;
+  height: 45rem;
+  display: flex;
+  flex-direction: row;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: solid 5px darkgray;
+  background-color: #f8f8f8;
+
+  >:first-child{
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+  }
+  >:last-child{
+    width: 50%;
+    height: 100%;
+    padding: 2rem;
+    background-color: #696363;
+
+
+  }
+  img{
+    width: 100%;
+    object-fit:fill;
+
+  }
+
+  .SomeTagContainer{
+    display: flex;
+    gap: 1rem;
+  }
+  
+}
+
+.MovieTopic{
+}
+
+.ChapterCSS {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #3b3939;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ChapterCSS:hover {
+  background-color: #747070;
+}
+
+.ChapterCSS > div {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ChapterCSS h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ChapterCSS p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Your existing wrapper class */
+.ChapterDesign {
+  width: 100%;
+  padding: 2rem;
+}
+
+.ChapterDesign > :nth-child(n) {
+  margin-top: 1rem;
 }
