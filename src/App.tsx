@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Tag as TagIcon, Star  } from 'lucide-react';
 import {faker,} from '@faker-js/faker';
 import './App.css'
+import { useNavigate } from 'react-router';
 
 function App() {
 
@@ -71,7 +72,8 @@ function SearchBar(){
 }
 
 function ProfileNav(){
-  const [auth, setAuth] = useState(false);
+  const [auth, setAuth] = useState(true);
+  const nav = useNavigate();
 
   return(
     <div className='ProfileNav'>
@@ -82,9 +84,16 @@ function ProfileNav(){
           <button>SignUp</button>
         </>
       }
+      {
+        auth && 
+        <>
+          <button onClick={()=>nav(`/Person/${faker.person.firstName()}`)}>My Books</button>
+          <button>Create Book</button>
+        </> 
+      }
 
       {
-        auth ? <div className='PofileIcon'>Profile Name</div> : <div className='PofileIcon'>G</div>
+        auth ? <div className='PofileIcon'>{faker.person.firstName()[0]}</div> : <div className='PofileIcon'>G</div>
       }
       
     </div>
@@ -137,7 +146,7 @@ function Tag({text}:{text:string}) {
 
 //I want the picture to only be visible but when hovered I want details ro show from the bottom. 
 //with a solid but blurered/half tranparent background
-function Card() {
+export function Card() {
   // Generate random rating between 1-5
   const rating = Number((Math.random() * 4 + 1).toFixed(1));
   
