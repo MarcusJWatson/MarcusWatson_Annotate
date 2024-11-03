@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Search, Tag as TagIcon  } from 'lucide-react';
-import {faker} from '@faker-js/faker';
+import { Search, Tag as TagIcon, Star  } from 'lucide-react';
+import {faker,} from '@faker-js/faker';
 import './App.css'
 
 function App() {
@@ -9,7 +9,9 @@ function App() {
     <div className='SiteBase'>
       <Header />
       <TotalDisplay />
-
+      <RowCardWithTag/>
+      <RowCardWithTag/>
+      <RowCardWithTag/>
       {
         // Row with tag array goes here.
       }
@@ -113,8 +115,8 @@ function TotalDisplay(){
           ))
         }
       </div>
-      <p>Description</p>
-      <div>
+      <p>{faker.lorem.paragraph(2)}</p>
+      <div className='button-container'>
         <button>Read</button>
         <button>Favorite</button>
       </div>
@@ -132,15 +134,58 @@ function Tag({text}:{text:string}) {
   );
 }
 
-function Card(){
 
+//I want the picture to only be visible but when hovered I want details ro show from the bottom. 
+//with a solid but blurered/half tranparent background
+function Card() {
+  // Generate random rating between 1-5
+  const rating = Number((Math.random() * 4 + 1).toFixed(1));
+  
+  return (
+    <div className='Card'>
+      <img src={faker.image.urlPicsumPhotos()} alt="card image" />
+      <div className='CardContent'>
+        <h3>{faker.lorem.words(2)}</h3>
+        
+        <div className='RatingContainer'>
+
+          <div className='StarDisp'>
+            <Star size={16} fill={rating >= 1 ? 'orange' : 'transparent'} color={rating >= 1 ? 'orange' : 'white'}/>
+            <Star size={16} fill={rating >= 2 ? 'orange' : 'transparent'} color={rating >= 2 ? 'orange' : 'white'}/>
+            <Star size={16} fill={rating >= 3 ? 'orange' : 'transparent'} color={rating >= 3 ? 'orange' : 'white'}/>
+            <Star size={16} fill={rating >= 4 ? 'orange' : 'transparent'} color={rating >= 4 ? 'orange' : 'white'}/>
+            <Star size={16} fill={rating >= 5 ? 'orange' : 'transparent'} color={rating >= 5 ? 'orange' : 'white'}/>
+          </div>
+          <span className='RatingNumber'>{rating}</span>
+        </div>
+        
+        <p>{faker.lorem.sentence()}</p>
+      </div>
+    </div>
+  );
 }
 
 function RowCard(){
 
+  const rowSize = 7;
+
+  return(
+    <div className='CardArray'>
+      {
+        Array(rowSize).fill(null).map(() => <Card />)
+      }
+    </div>
+  );
 }
 
 function RowCardWithTag(){
+
+  return(
+    <div className='RowWithTag'>
+      <h2>{faker.word.noun()}</h2>
+      <RowCard />
+    </div>
+  );
 
 }
 
