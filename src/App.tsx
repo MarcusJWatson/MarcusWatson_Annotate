@@ -89,7 +89,7 @@ function ProfileNav(){
         auth && 
         <>
           <button onClick={()=>nav(`/Person/${faker.person.firstName()}`)}>My Books</button>
-          <button  onClick={()=>nav(`/Editor`)}>Create Book</button>
+          <button  onClick={()=>nav(`/Editor/${faker.book.title()}`)}>Create Book</button>
         </> 
       }
 
