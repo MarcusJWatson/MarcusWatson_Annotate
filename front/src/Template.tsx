@@ -1,84 +1,185 @@
-import { useNavigate, useParams } from "react-router";
+import { resolvePath, useNavigate, useParams } from "react-router";
 import { Card, Header, RowCard, Tag } from "./App";
-import { faker } from "@faker-js/faker";
+import { da, faker } from "@faker-js/faker";
 import { BookOpen, ChevronDown, ChevronRight, ChevronUp, ImageIcon, Star } from "lucide-react";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import { Book, User as personInfo, Chapter as chapterType, getAChapter, getBook, getChapterQuotes, getChapters, getQuoteSubquotes, getTagsByBook, Quote, SubQuote, Tag as tagtype, UserContext, getUserBooks, getUserFavoriteBooks, fetchBooks } from "./myContext";
+import { useSearchParams } from "react-router-dom";
 
 
 
-export function MyPage(){
-    const {person} = useParams();
+export function AllTheBooks(){
+    const[AllBooks, setAllBooks] = useState<Array<Book>>([]);
+    const [searchParams] = useSearchParams();
+    const searchTerm = searchParams.get('search') || '';
+
+    useEffect(()=>{
+        const bookies = fetchBooks();
+        bookies.then(res=>{
+            const filteredBooks = res.filter(book => 
+                book.title.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+            setAllBooks(filteredBooks);
+        });
+    },[]);
+
+    return(
+        <div className="SiteBase">
+        <Header />
+
+        <div className="personProfile">
+            <div>
+                <div className="myBookArray">
+                    {
+                        AllBooks.map((elem, id) => <Card book={elem} key={id}/>)
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+    )
+}
+
+export function MyPage() {
+    const { person } = useParams();
+    const[myBooks, setMyBooks] = useState<Book[]>([]);
+    const[favBooks, setFavBooks] = useState<Book[]>([]);
+    const context = useContext(UserContext);
+    const nav = useNavigate();
+
+    useEffect(()=>{
+
+        if(!person) return
+        // ideally redirect away from here
+        //get person books
+        const myBookies = getUserBooks(Number(person)) // i am slowly loosing my mind with all this repititveness
+        myBookies.then(response=>{
+            console.log("bookies", response)
+
+            setMyBooks(response);
+        });
+        //get favorite books
+        const myFavBookies = getUserFavoriteBooks(Number(person));
+        myFavBookies.then(response=>{
+            setFavBooks(response);
+        });
+
+    },[person, context?.user])
+
     const rowSize = 55;
 
 
-    return(
+    return (
         <div className="SiteBase">
             <Header />
 
             <div className="personProfile">
-                <h1>{`Hello ${person},`}</h1>
+                <h1>{`Hello ${context?.user?.username},`}</h1>
                 <div>
                     <h2>Your Books</h2>
                     <div className="myBookArray">
                         {
-                            Array(rowSize).fill(null).map(() => <Card />)
+                            myBooks.map((elem, id) => <Card book={elem} key={id}/>)
+                        }
+                    </div>
+
+                    <hr style={{marginTop: "2rem", marginBottom: "2rem"}}></hr>
+                    <h2>Favorites</h2>
+                    <div className="myBookArray">
+                        {
+                            favBooks.map((elem, id) => <Card book={elem} key={id}/>)
                         }
                     </div>
 
                 </div>
             </div>
         </div>
-        
+
     );
 }
 
-export function ViewBook(){
-    const generateTags = () => {
-        const numTags = Math.floor(Math.random() * 3) + 3;
-        return Array(numTags).fill(null).map(() => faker.word.noun());
-    };
-    
-    const tags = generateTags();
-    const rating = Number((Math.random() * 4 + 1).toFixed(1));
+export function ViewBook() {
+    const [data, setData] = useState<Book>();
+    const [bookTags, setBookTags] = useState<tagtype[]>([]);
+    const [chapters, setChapters] = useState<chapterType[]>([]);
+
+    useEffect(() => {
+        //Override data if their is no book supplied
+        //What about ID'?
+        if (!data) {
+            const book = getBook('randomBook');
+            book.then(response => {
+                //if succeful then set the state
+                setData(response);
+
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!data) return;
+        //Get a books tags
+        const tags = getTagsByBook(data.book_id);
+        tags.then(response => {
+            setBookTags(response);
+        });
+    }, [data])
+
+    useEffect(()=>{
+        if(!data) return;
+        //Get the book chapters
+        const fetchChapters = getChapters(data.book_id);
+        fetchChapters.then(response=>{
+            setChapters(response);
+        });
+    },[data]);
+
+
+    const rating = data?.rating || 0; // make sure to refresh?
     const nav = useNavigate();
 
-    return(
+    // Array(6).fill(null).map((elem,key) => <Chapter id={key} quoteCount={Math.floor(Math.random()*10)} title={faker.book.title()} key={"some:"+key} />)
+
+    return (
         <div className="SiteBase">
             <Header />
 
             <div className="BookPage">
                 <div className="BookBreakDown">
                     <div>
-                        <img src={faker.image.urlPicsumPhotos()}></img>
+                        <img src={"http://localhost:3000/api" + data?.cover_image_url}></img>
                     </div>
                     <div>
-                        <h2 style={{fontSize: "4rem"}}>{faker.music.songName()}</h2>
+                        <h2 style={{ fontSize: "4rem" }}>{data?.title}</h2>
                         <div className="SomeTagContainer">
                             {
-                                tags.map((tag, index) => (
-                                    <Tag key={index} text={tag} />
+                                bookTags.map((tag, index) => (
+                                    <Tag key={index} text={tag.name} />
                                 ))
                             }
                         </div>
-                        <div className='RatingContainer' style={{marginTop:"1rem"}}>
+                        <div className='RatingContainer' style={{ marginTop: "1rem" }}>
                             <div className=''>
-                                <Star size={16} fill={rating >= 1 ? 'orange' : 'transparent'} color={rating >= 1 ? 'orange' : 'white'}/>
-                                <Star size={16} fill={rating >= 2 ? 'orange' : 'transparent'} color={rating >= 2 ? 'orange' : 'white'}/>
-                                <Star size={16} fill={rating >= 3 ? 'orange' : 'transparent'} color={rating >= 3 ? 'orange' : 'white'}/>
-                                <Star size={16} fill={rating >= 4 ? 'orange' : 'transparent'} color={rating >= 4 ? 'orange' : 'white'}/>
-                                <Star size={16} fill={rating >= 5 ? 'orange' : 'transparent'} color={rating >= 5 ? 'orange' : 'white'}/>
+                                <Star size={16} fill={rating >= 1 ? 'orange' : 'transparent'} color={rating >= 1 ? 'orange' : 'white'} />
+                                <Star size={16} fill={rating >= 2 ? 'orange' : 'transparent'} color={rating >= 2 ? 'orange' : 'white'} />
+                                <Star size={16} fill={rating >= 3 ? 'orange' : 'transparent'} color={rating >= 3 ? 'orange' : 'white'} />
+                                <Star size={16} fill={rating >= 4 ? 'orange' : 'transparent'} color={rating >= 4 ? 'orange' : 'white'} />
+                                <Star size={16} fill={rating >= 5 ? 'orange' : 'transparent'} color={rating >= 5 ? 'orange' : 'white'} />
                             </div>
                             <span className='RatingNumber'>{rating}</span>
                         </div>
                         <p className="MovieTopic">
-                            {faker.lorem.sentences()}
+                            {data?.description}
                         </p>
                     </div>
                 </div>
                 <div className="ChapterDesign">
                     <h2>Chapters</h2>
                     {
-                        Array(6).fill(null).map((elem,key) => <Chapter id={key} quoteCount={Math.floor(Math.random()*10)} title={faker.book.title()} key={"some:"+key} />)
+                        chapters.map((elem, id)=>{
+                            return <Chapter id={elem.chapter_id} bookID={elem.book_id}  index={elem.chapter_number} quoteCount={1} title={faker.book.title()} key={"some:"+id} />
+                        })
                     }
                 </div>
             </div>
@@ -86,103 +187,99 @@ export function ViewBook(){
     );
 }
 
-export function Chapter({id, title, quoteCount}:{title:string, id:number, quoteCount:number}){
+export function Chapter({ id, title, quoteCount, bookID, index }: { title: string, index:number, id: number, quoteCount: number, bookID:number }) {
     const nav = useNavigate();
-
-    return(
-        <div 
+    // I dont think I wanna use quote count no more......
+    return (
+        <div
             key={id}
             className="ChapterCSS"
-            onClick={()=>{nav(`/Book/${title}/${id}`)}}
+            onClick={() => { nav(`/Book/${bookID}/${id}`) }}
         >
             <div>
                 <BookOpen />
                 <div>
-                <h3 >
-                    Chapter {id}: {title}
-                </h3>
-                <p>
-                    {quoteCount} quotes
-                </p>
+                    <h3 >
+                        Chapter {index}: {title}
+                    </h3>
+                    <p>
+                        view quotes
+                    </p>
                 </div>
             </div>
-            <ChevronRight  />
+            <ChevronRight />
         </div>
     );
 }
 
-export function ViewChapter(){
-    const {chapter} = useParams();
-    // Sample data - would come from your data source
-    const chapterData = {
-        title: faker.book.title(),
-        quotes: [
-            {
-                id: `${chapter}.1`,
-                text: "Mo Wuji holds Li Xuan's opinion in the highest regard! As does he Zuo Mo's, Zhou Fan's, Xu Yan's, Yang Kai's, Lu Sheng's.... or anyone with connections to him!",
-                context: "Lu Sheng stated the obvious but only Xu Yan understood the implications.",
-                explanation: "This quote emphasizes the discovery of inner strength during difficult times.",
-                imageUrl: "/api/placeholder/400/300",
-                subquotes: [
-                    {
-                        id: `${chapter}.1.1`,
-                        text: "Its because Ancestor Mo wishes for everyone to walk the Dao, so he gives everyone preferential treatment.",
-                        explanation: "Lu Sheng was a little surprised by this answer. No wonder he is Sect Master Li Xuan treasured disciple. He truly is one with foresight."
-                    },
-                    {
-                        id: `${chapter}.1.2`,
-                        text: "Hm. Indeed it is so.",
-                        explanation: "Lu Sheng replied simply without any airs. But deep down, he sighed to himself."
-                    },
-                    {
-                        id: `${chapter}.1.3`,
-                        text: "Mo Wuji truly does not see the world the same as us. Any matter is reduced to a simple problem for Ancestor Mo. This includes the ones that need to be handled with care. He can ignore the consequences but what about us little guys......",
-                        explanation: "No explanation?"
-                    }
-                ]
-            },
-            {
-                id: `${chapter}.2`,
-                text: "The only way to do great work is to love what you do.",
-                context: "Discussion about passion and dedication",
-                explanation: "Shows the connection between enjoyment and quality of work",
-                imageUrl: "/api/placeholder/400/300",
-                subquotes: []
-            }
-        ]
-    };
+export function ViewChapter() {
+    const { book, chapter } = useParams();
+    const[data, setData] = useState<chapterType>();
+    const[chapterQuotes, setChapterQuotes] = useState<Quote[]>([]);
 
-    return(
+    useEffect(()=>{
+        if(!chapter || !book) return; // may not be needed here
+        const chapterID= Number(chapter);
+        const bookID = Number(book);
+        console.log("We at: ", bookID, chapterID)
+        const chaptInfo = getAChapter(bookID, chapterID);
+        chaptInfo.then(response=>{
+            setData(response);
+        });
+
+    },[chapter, book])
+
+    useEffect(()=>{
+        if(!data) return; // may not be needed here
+        const resultChapts = getChapterQuotes(data.chapter_id);
+        resultChapts.then(response=>{
+            console.log("these are the quotes: ", response)
+            setChapterQuotes(response);
+        })
+
+    },[data]);
+
+
+    return (
         <div className="SiteBase">
             <Header />
 
             <div className="ViewChapterCSS">
                 <div className="chapterHeader">
-                    <h1>Chapter {chapter}: {faker.book.title()}</h1>
+                    <h1>Chapter {data?.chapter_number}: {data?.title}</h1>
                 </div>
-                    
+
                 <div className="quotesContainer">
-                    {chapterData.quotes.map((quote) => (
-                        <QuoteBlock key={quote.id} quote={quote} />
+                    {chapterQuotes.map((quote, id) => (
+                        <QuoteBlock key={id} quote={quote} />
                     ))}
                 </div>
 
             </div>
-            
+
 
         </div>
     );
 }
 
-function QuoteBlock({ quote }:{quote:any}) {
+function QuoteBlock({ quote }: { quote: Quote }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showImage, setShowImage] = useState(false);
+    const [subQuotes, setSubQuotes] = useState<SubQuote[]>([]);
+
+    useEffect(()=>{
+        const getTheSubs = getQuoteSubquotes(quote.quote_id);
+        getTheSubs.then(response=>{
+            setSubQuotes(response);
+        });
+
+    },[quote]);
 
     return (
         <div className="quote-block">
             <div className="quote-header" onClick={() => setIsExpanded(!isExpanded)}>
-                <div className="quote-label">{quote.id}</div>
-                <div className="quote-text">{quote.text}</div>
+                <div className="quote-label">{quote.quote_number}</div>
+                <div className="quote-text">{quote.quote_text}</div>
                 {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </div>
 
@@ -190,7 +287,7 @@ function QuoteBlock({ quote }:{quote:any}) {
                 <div className="quote-details">
                     <div className="quote-context">
                         <h3>Context</h3>
-                        <p>{quote.context}</p>
+                        <p>{quote.context /* Shuold be a pitcure? */}</p>
                     </div>
 
                     <div className="quote-explanation">
@@ -198,30 +295,30 @@ function QuoteBlock({ quote }:{quote:any}) {
                         <p>{quote.explanation}</p>
                     </div>
 
-                    {quote.imageUrl && (
+                    {quote.context_image_location && (
                         <div className="quote-image">
-                            <button 
+                            <button
                                 className="image-button"
                                 onClick={() => setShowImage(!showImage)}
                             >
                                 <ImageIcon size={20} />
                                 <span>View Context Image</span>
                             </button>
-                            
+
                             {showImage && (
-                                <img src={quote.imageUrl} alt="Quote context" />
+                                <img src={"http://localhost:3000/api"+quote.context_image_location} alt="Quote context" />
                             )}
                         </div>
                     )}
 
-                    {quote.subquotes.length > 0 && (
+                    {subQuotes.length > 0 && (
                         <div className="subquotes">
                             <h3>Related Quotes</h3>
-                            {quote.subquotes.map((subquote:any) => (
-                                <div key={subquote.id} className="subquote">
-                                    <div className="subquote-label">{subquote.id}</div>
+                            {subQuotes.map((subquote: SubQuote, id) => (
+                                <div key={id} className="subquote">
+                                    <div className="subquote-label">{subquote.subquote_number}</div>
                                     <div className="subquote-content">
-                                        <p className="subquote-text">{subquote.text}</p>
+                                        <p className="subquote-text">{subquote.subquote_text}</p>
                                         <p className="subquote-explanation">{subquote.explanation}</p>
                                     </div>
                                 </div>
@@ -238,11 +335,11 @@ function QuoteBlock({ quote }:{quote:any}) {
 
 
 
-export function EditorPage(){
-    const {name} = useParams();
+export function EditorPage() {
+    const { name } = useParams();
 
 
-    return(
+    return (
         <div className="SiteBase">
             <Header />
 
@@ -251,7 +348,7 @@ export function EditorPage(){
 
             </div>
         </div>
-        
+
     );
 }
 
