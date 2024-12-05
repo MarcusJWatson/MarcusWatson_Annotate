@@ -3,6 +3,9 @@
 Only shell pages are implemented.
 Need to make the backend to actually get a good feel for the project
 
+# Purpose
+- note taking app for when I read books. I read a lot of novels. Primaril wuxia novels. I come across many scenes or events that I would want to save context for or revisit later. This allows me to store and save those memories and my comments on them.
+
 ## Getting Started
 
 - DownLoad Zip
