@@ -5,7 +5,6 @@ import App from './App.tsx'
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AllTheBooks, EditorPage, MyPage, ViewBook, ViewChapter } from './Template.tsx';
-import BookEditor from './bookeditor.tsx';
 import { UserProvider } from './myContext.tsx';
 import { AuthPage } from './auth.tsx';
 
@@ -29,9 +28,12 @@ createRoot(document.getElementById('root')!).render(
         <Route path='/Book/:book/:chapter' element={<ViewChapter />} />
 
 
-        {/* Below the routs Should be protected But this is a simple demostration... */}
-        <Route path='/Editor/:name' element={<BookEditor />} />
-        <Route path='/Editor/:name/:chapter' element={<BookEditor />} />
+        {/* Below the routs Should be protected But this is a simple demostration... 
+          <Route path='/Editor/:name/:chapter' element={<BookEditor />} />
+          
+          <Route path='/Editor/:name' element={<BookEditor />} />
+        
+        */}
 
 
       </Routes>

@@ -249,7 +249,8 @@
     transform: scale(1.05);
 
     .CardContent {
-      transform: translateY(0);
+      /*transform: translateY(0);*/
+      opacity: 100%;
     }
   }
 
@@ -279,8 +280,9 @@
   padding: 1.5rem 1rem;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
+  /*transform: translateY(100%);*/
+  transition: all 0.2s linear;
+  opacity: 0%;
 
   >h3 {
     color: #FFFFFF;
@@ -453,8 +455,6 @@
 
 }
 
-.MovieTopic {}
-
 .ChapterCSS {
   display: flex;
   justify-content: space-between;
@@ -621,4 +621,10 @@
   margin: 0;
   font-size: 0.9rem;
   color: #c2baba;
+}
+
+.Fav-Button{
+  background-color: transparent;
+
+
 }

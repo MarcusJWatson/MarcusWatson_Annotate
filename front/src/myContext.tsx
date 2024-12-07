@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 
 
@@ -310,6 +311,78 @@ export const fetchBooks = async (): Promise<Book[]> => {
     return response.json();
   } catch (error) {
     console.error('Error fetching books:', error);
+    throw error;
+  }
+};
+
+export const toggleFavoriteStatus = async (userId: number, bookId: number): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${userId}/favorites/toggle/${bookId}`,
+      { method: 'POST' }
+    );
+    const result = await response.json();
+    return result.isFavorite;
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    throw error;
+  }
+};
+
+export const checkFavoriteStatus = async (userId: number, bookId: number): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${userId}/favorites/${bookId}`
+    );
+    const result = await response.json();
+    return result.isFavorite;
+  } catch (error) {
+    console.error('Error checking favorite status:', error);
+    throw error;
+  }
+};
+
+export const checkBookOwnership = async (userId: number, bookId: number): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/books/${bookId}/ownership/${userId}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to check book ownership');
+    }
+    const result = await response.json();
+    return result.isOwner;
+  } catch (error) {
+    console.error('Error checking book ownership:', error);
+    return false;
+  }
+};
+
+export const createBook = async (formData: FormData): Promise<Book> => {
+  const response = await fetch(`${API_BASE_URL}/books`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create book');
+  }
+  return response.json();
+};
+
+export const deleteBook = async (bookId: number) => {
+  try {
+    const response = await fetch(`${BASE_URL}/deleteBook/${bookId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete book');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
     throw error;
   }
 };

@@ -1,71 +1,73 @@
 import { resolvePath, useNavigate, useParams } from "react-router";
 import { Card, Header, RowCard, Tag } from "./App";
 import { da, faker } from "@faker-js/faker";
-import { BookOpen, ChevronDown, ChevronRight, ChevronUp, ImageIcon, Star } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, ChevronUp, ImageIcon, Star, PenIcon, Trash } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { Book, User as personInfo, Chapter as chapterType, getAChapter, getBook, getChapterQuotes, getChapters, getQuoteSubquotes, getTagsByBook, Quote, SubQuote, Tag as tagtype, UserContext, getUserBooks, getUserFavoriteBooks, fetchBooks } from "./myContext";
+import { Book, User as personInfo, Chapter as chapterType, getAChapter, getBook, getChapterQuotes, getChapters, getQuoteSubquotes, getTagsByBook, Quote, SubQuote, Tag as tagtype, UserContext, getUserBooks, getUserFavoriteBooks, fetchBooks, checkBookOwnership } from "./myContext";
 import { useSearchParams } from "react-router-dom";
+import "./bookeditor.css"
+import CreateBookModal, { CreateEditModal } from "./bookeditor";
 
 
 
-export function AllTheBooks(){
-    const[AllBooks, setAllBooks] = useState<Array<Book>>([]);
+export function AllTheBooks() {
+    const [AllBooks, setAllBooks] = useState<Array<Book>>([]);
     const [searchParams] = useSearchParams();
     const searchTerm = searchParams.get('search') || '';
 
-    useEffect(()=>{
+    useEffect(() => {
         const bookies = fetchBooks();
-        bookies.then(res=>{
-            const filteredBooks = res.filter(book => 
+        bookies.then(res => {
+            const filteredBooks = res.filter(book =>
                 book.title.toLowerCase().includes(searchTerm.toLowerCase())
-              );
+            );
             setAllBooks(filteredBooks);
         });
-    },[]);
+    }, [searchTerm]);
 
-    return(
+    return (
         <div className="SiteBase">
-        <Header />
+            <Header />
 
-        <div className="personProfile">
-            <div>
-                <div className="myBookArray">
-                    {
-                        AllBooks.map((elem, id) => <Card book={elem} key={id}/>)
-                    }
+            <div className="personProfile">
+                <div>
+                    <div className="myBookArray">
+                        {
+                            AllBooks.length > 0 ? AllBooks.map((elem, id) => <Card book={elem} key={id} />) : <span style={{ marginRight: "auto", marginLeft: "auto" }}>"No Results Found"</span>
+                        }
+                    </div>
+
                 </div>
-
             </div>
         </div>
-    </div>
     )
 }
 
 export function MyPage() {
     const { person } = useParams();
-    const[myBooks, setMyBooks] = useState<Book[]>([]);
-    const[favBooks, setFavBooks] = useState<Book[]>([]);
+    const [myBooks, setMyBooks] = useState<Book[]>([]);
+    const [favBooks, setFavBooks] = useState<Book[]>([]);
     const context = useContext(UserContext);
     const nav = useNavigate();
 
-    useEffect(()=>{
+    useEffect(() => {
 
-        if(!person) return
+        if (!person) return
         // ideally redirect away from here
         //get person books
         const myBookies = getUserBooks(Number(person)) // i am slowly loosing my mind with all this repititveness
-        myBookies.then(response=>{
+        myBookies.then(response => {
             console.log("bookies", response)
 
             setMyBooks(response);
         });
         //get favorite books
         const myFavBookies = getUserFavoriteBooks(Number(person));
-        myFavBookies.then(response=>{
+        myFavBookies.then(response => {
             setFavBooks(response);
         });
 
-    },[person, context?.user])
+    }, [person, context?.user])
 
     const rowSize = 55;
 
@@ -80,15 +82,15 @@ export function MyPage() {
                     <h2>Your Books</h2>
                     <div className="myBookArray">
                         {
-                            myBooks.map((elem, id) => <Card book={elem} key={id}/>)
+                            myBooks.map((elem, id) => <Card book={elem} key={id} />)
                         }
                     </div>
 
-                    <hr style={{marginTop: "2rem", marginBottom: "2rem"}}></hr>
+                    <hr style={{ marginTop: "2rem", marginBottom: "2rem" }}></hr>
                     <h2>Favorites</h2>
                     <div className="myBookArray">
                         {
-                            favBooks.map((elem, id) => <Card book={elem} key={id}/>)
+                            favBooks.map((elem, id) => <Card book={elem} key={id} />)
                         }
                     </div>
 
@@ -103,18 +105,22 @@ export function ViewBook() {
     const [data, setData] = useState<Book>();
     const [bookTags, setBookTags] = useState<tagtype[]>([]);
     const [chapters, setChapters] = useState<chapterType[]>([]);
+    const { book } = useParams();
+    const [editor, setEditor] = useState(false);
+    const [showEdit, setShowEdit] = useState(false);
+    const context = useContext(UserContext);
 
     useEffect(() => {
         //Override data if their is no book supplied
         //What about ID'?
-        if (!data) {
-            const book = getBook('randomBook');
-            book.then(response => {
-                //if succeful then set the state
-                setData(response);
+        if (!book) return;
+        const bookie = getBook(book);
+        bookie.then(response => {
+            //if succeful then set the state
+            setData(response);
 
-            });
-        }
+        });
+
     }, []);
 
     useEffect(() => {
@@ -126,14 +132,20 @@ export function ViewBook() {
         });
     }, [data])
 
-    useEffect(()=>{
-        if(!data) return;
+    useEffect(() => {
+        if (!data) return;
         //Get the book chapters
         const fetchChapters = getChapters(data.book_id);
-        fetchChapters.then(response=>{
+        fetchChapters.then(response => {
             setChapters(response);
         });
-    },[data]);
+    }, [data]);
+
+    useEffect(()=>{
+        if(!context && data) return;
+        const ownerShip = checkBookOwnership(context?.user?.id!,data?.book_id!);
+        ownerShip.then(res=>{setShowEdit(res)});
+    },[data, context])
 
 
     const rating = data?.rating || 0; // make sure to refresh?
@@ -150,8 +162,12 @@ export function ViewBook() {
                     <div>
                         <img src={"http://localhost:3000/api" + data?.cover_image_url}></img>
                     </div>
-                    <div>
+                    <div style={{ position: "relative" }}>
                         <h2 style={{ fontSize: "4rem" }}>{data?.title}</h2>
+                        {
+                            !showEdit ? null :
+                            <button className="PenIcon" onClick={() => { setEditor(true) }}><PenIcon size={16} color="white" /></button>
+                        }
                         <div className="SomeTagContainer">
                             {
                                 bookTags.map((tag, index) => (
@@ -174,22 +190,34 @@ export function ViewBook() {
                         </p>
                     </div>
                 </div>
+                {showEdit && <button className="Add-Chapter">Add Chapter</button>}
                 <div className="ChapterDesign">
                     <h2>Chapters</h2>
                     {
-                        chapters.map((elem, id)=>{
-                            return <Chapter id={elem.chapter_id} bookID={elem.book_id}  index={elem.chapter_number} quoteCount={1} title={faker.book.title()} key={"some:"+id} />
+                        chapters.map((elem, id) => {
+                            return <Chapter id={elem.chapter_id} canEdit={showEdit} bookID={elem.book_id} index={elem.chapter_number} quoteCount={1} title={elem.title} key={"some:" + id} />
                         })
                     }
                 </div>
             </div>
+            
+            {editor && data && <CreateEditModal
+                isOpen={editor}
+                onClose={() => setEditor(false)}
+                bookId={data?.book_id}
+            />}
+
         </div>
     );
 }
 
-export function Chapter({ id, title, quoteCount, bookID, index }: { title: string, index:number, id: number, quoteCount: number, bookID:number }) {
+export function Chapter({ id, title, quoteCount, bookID, index, canEdit }: {canEdit:boolean; title: string, index: number, id: number, quoteCount: number, bookID: number }) {
     const nav = useNavigate();
     // I dont think I wanna use quote count no more......
+
+    function handleDeletion(e:any){
+        e.stopPropagation();
+    }
     return (
         <div
             key={id}
@@ -207,37 +235,44 @@ export function Chapter({ id, title, quoteCount, bookID, index }: { title: strin
                     </p>
                 </div>
             </div>
-            <ChevronRight />
+
+            <div>
+                {canEdit && <button onClick={(e)=>{handleDeletion(e)}}><PenIcon/></button>}
+                {canEdit && <button onClick={(e)=>{handleDeletion(e)}}><Trash/></button>}
+
+                <ChevronRight /> 
+            </div>
+
         </div>
     );
 }
 
 export function ViewChapter() {
     const { book, chapter } = useParams();
-    const[data, setData] = useState<chapterType>();
-    const[chapterQuotes, setChapterQuotes] = useState<Quote[]>([]);
+    const [data, setData] = useState<chapterType>();
+    const [chapterQuotes, setChapterQuotes] = useState<Quote[]>([]);
 
-    useEffect(()=>{
-        if(!chapter || !book) return; // may not be needed here
-        const chapterID= Number(chapter);
+    useEffect(() => {
+        if (!chapter || !book) return; // may not be needed here
+        const chapterID = Number(chapter);
         const bookID = Number(book);
         console.log("We at: ", bookID, chapterID)
         const chaptInfo = getAChapter(bookID, chapterID);
-        chaptInfo.then(response=>{
+        chaptInfo.then(response => {
             setData(response);
         });
 
-    },[chapter, book])
+    }, [chapter, book])
 
-    useEffect(()=>{
-        if(!data) return; // may not be needed here
+    useEffect(() => {
+        if (!data) return; // may not be needed here
         const resultChapts = getChapterQuotes(data.chapter_id);
-        resultChapts.then(response=>{
+        resultChapts.then(response => {
             console.log("these are the quotes: ", response)
             setChapterQuotes(response);
         })
 
-    },[data]);
+    }, [data]);
 
 
     return (
@@ -267,13 +302,13 @@ function QuoteBlock({ quote }: { quote: Quote }) {
     const [showImage, setShowImage] = useState(false);
     const [subQuotes, setSubQuotes] = useState<SubQuote[]>([]);
 
-    useEffect(()=>{
+    useEffect(() => {
         const getTheSubs = getQuoteSubquotes(quote.quote_id);
-        getTheSubs.then(response=>{
+        getTheSubs.then(response => {
             setSubQuotes(response);
         });
 
-    },[quote]);
+    }, [quote]);
 
     return (
         <div className="quote-block">
@@ -306,7 +341,7 @@ function QuoteBlock({ quote }: { quote: Quote }) {
                             </button>
 
                             {showImage && (
-                                <img src={"http://localhost:3000/api"+quote.context_image_location} alt="Quote context" />
+                                <img src={"http://localhost:3000/api" + quote.context_image_location} alt="Quote context" />
                             )}
                         </div>
                     )}

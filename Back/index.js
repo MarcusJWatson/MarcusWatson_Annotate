@@ -42,9 +42,9 @@ app.post('/register', async (req, res) => {
     db.query(
         'INSERT INTO Users (username, email, naivePassword, created_at) VALUES (?, ?, ?, NOW())',
         [username, email, password],
-        ((err,result)=>{
-            if(err) throw err;
-            
+        ((err, result) => {
+            if (err) throw err;
+
             res.status(201).send({ message: 'User created successfully' });
         })
     );
@@ -77,6 +77,70 @@ app.post('/login', async (req, res) => {
             email: result[0].email
         });
     });
+});
+
+app.post('/api/users/:userId/favorites/toggle/:bookId', (req, res) => {
+    const { userId, bookId } = req.params;
+
+    // First check if the favorite exists
+    db.query('SELECT * FROM userfavorites WHERE user_id = ? AND book_id = ?',
+        [userId, bookId],
+        (err, result) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+
+            if (result.length > 0) {
+                // Favorite exists, so remove it
+                db.query('DELETE FROM userfavorites WHERE user_id = ? AND book_id = ?',
+                    [userId, bookId],
+                    (err, result) => {
+                        if (err) {
+                            return res.status(500).send({ error: err.message });
+                        }
+                        res.send({ message: 'Favorite removed', isFavorite: false });
+                    });
+            } else {
+                // Favorite doesn't exist, so add it
+                db.query('INSERT INTO userfavorites (user_id, book_id) VALUES (?, ?)',
+                    [userId, bookId],
+                    (err, result) => {
+                        if (err) {
+                            return res.status(500).send({ error: err.message });
+                        }
+                        res.send({ message: 'Favorite added', isFavorite: true });
+                    });
+            }
+        });
+});
+
+//Make a new book
+app.post('/api/books', upload.single('coverImage'), (req, res) => {
+    const { title, description, rating } = req.body;
+    const userId = req.body.userId;
+    const coverImageUrl = req.file ? '/book-covers/' + req.file.filename : null;
+
+    db.query(
+        'INSERT INTO books (title, description, rating, cover_image_url, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+        [title, description, rating, coverImageUrl, userId],
+        (err, result) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+            
+            // Return the newly created book
+            db.query(
+                'SELECT * FROM books WHERE book_id = ?',
+                [result.insertId],
+                (err, bookResult) => {
+                    if (err) {
+                        return res.status(500).send({ error: err.message });
+                    }
+                    res.status(201).send(bookResult[0]);
+                }
+            );
+        }
+    );
 });
 
 //////////////////////////////////////////////////////////////////
@@ -146,9 +210,9 @@ app.get('/api/:bookId/tags', (req, res) => {
     db.query(query, [bookId], (err, results) => {
         if (err) {
             console.error('Error fetching tags:', err);
-            return res.status(500).send({ 
+            return res.status(500).send({
                 error: 'Error fetching tags',
-                details: err.message 
+                details: err.message
             });
         }
 
@@ -181,7 +245,7 @@ app.get('/api/pictures/random', (req, res) => {
 app.get('/api/book-covers/:filename', (req, res) => {
     const { filename } = req.params;
     const imagePath = path.join(__dirname, 'public/uploads/book-covers', filename);
-  
+
     if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
     } else {
@@ -209,50 +273,50 @@ app.get('/books/tag/:tagId', (req, res) => {
 
 app.get('/books/:bookId/chapters', (req, res) => {
     const bookId = req.params.bookId;
-    
+
     const query = `
         SELECT chapter_id, book_id, chapter_number, title 
         FROM chapters 
         WHERE book_id = ? 
         ORDER BY chapter_number ASC`;
-    
+
     db.query(query, [bookId], (err, results) => {
         if (err) {
             console.error('Error fetching chapters:', err);
             return res.status(500).send({ error: 'Error fetching chapters' });
         }
-        
+
         res.send(results);
     });
 });
 
 app.get('/getChapter/:bookId/:chapter', (req, res) => {
-    const {bookId, chapter} = req.params;
-    
+    const { bookId, chapter } = req.params;
+
     const query = `
         SELECT chapter_id, book_id, chapter_number, title 
         FROM chapters 
         WHERE book_id = ? AND chapter_id = ?
     `;
-    
+
     db.query(query, [bookId, chapter], (err, results) => {
         if (err) {
             console.error('Error fetching chapters:', err);
             return res.status(500).send({ error: 'Error fetching chapters' });
         }
-        
+
         res.send(results[0]);
     });
 });
 
 app.get('/chapterQuotes/:chapterId/quotes', (req, res) => {
     const chapterId = req.params.chapterId;
-    
+
     const query = `
         SELECT * FROM quotes 
         WHERE chapter_id = ? 
         ORDER BY quote_number ASC`;
-    
+
     db.query(query, [chapterId], (err, results) => {
         if (err) {
             console.error('Error fetching quotes:', err);
@@ -265,7 +329,7 @@ app.get('/chapterQuotes/:chapterId/quotes', (req, res) => {
 
 app.get('/quotes/:quoteId', (req, res) => {
     const quoteId = req.params.quoteId;
-    
+
     db.query('SELECT * FROM quotes WHERE quote_id = ?', [quoteId], (err, results) => {
         if (err) {
             console.error('Error fetching quote:', err);
@@ -281,12 +345,12 @@ app.get('/quotes/:quoteId', (req, res) => {
 //SUBQUOTES!!!
 app.get('/quotes/:quoteId/subquotes', (req, res) => {
     const quoteId = req.params.quoteId;
-    
+
     const query = `
         SELECT * FROM subquotes 
         WHERE quote_id = ? 
         ORDER BY subquote_number ASC`;
-    
+
     db.query(query, [quoteId], (err, results) => {
         if (err) {
             console.error('Error fetching subquotes:', err);
@@ -300,9 +364,9 @@ app.get('/quotes/:quoteId/subquotes', (req, res) => {
 // Get books created by user
 app.get('/users/:userId/books', (req, res) => {
     const userId = req.params.userId;
-    
+
     const query = 'SELECT * FROM books WHERE created_by = ?';
-    
+
     db.query(query, [userId], (err, results) => {
         if (err) {
             console.error('Error fetching user books:', err);
@@ -315,13 +379,13 @@ app.get('/users/:userId/books', (req, res) => {
 // User favorite books
 app.get('/users/:userId/favorite-books', (req, res) => {
     const userId = req.params.userId;
-    
+
     const query = `
         SELECT b.* 
         FROM books b
         JOIN userfavorites favs ON b.book_id = favs.book_id
         WHERE favs.user_id = ?`;
-    
+
     db.query(query, [userId], (err, results) => {
         if (err) {
             console.error('Error fetching favorite books:', err);
@@ -336,9 +400,40 @@ app.get('/GETALLDBBOOKS', (req, res) => {
         if (err) {
             return res.status(500).send({ error: err.message });
         }
-        console.log(results);
+        //console.log(results);
         res.send(results);
     });
+});
+
+// Check if a book is favorited
+app.get('/api/users/:userId/favorites/:bookId', (req, res) => {
+    const { userId, bookId } = req.params;
+
+    db.query('SELECT * FROM userfavorites WHERE user_id = ? AND book_id = ?',
+        [userId, bookId],
+        (err, result) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+            console.log(result.length > 0);
+            res.send({ isFavorite: result.length > 0 });
+        }
+    );
+});
+
+app.get('/api/books/:bookId/ownership/:userId', (req, res) => {
+    const { bookId, userId } = req.params;
+    
+    db.query(
+        'SELECT COUNT(*) as count FROM books WHERE book_id = ? AND created_by = ?',
+        [bookId, userId],
+        (err, result) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+            res.send({ isOwner: result[0].count > 0 });
+        }
+    );
 });
 
 
@@ -365,7 +460,7 @@ app.delete('/api/books/:id', (req, res) => {
 app.put('/api/books/:id', (req, res) => {
     const bookId = req.params.id;
     const { title, description, rating } = req.body;
-    
+
     db.query(
         'UPDATE books SET title = ?, description = ?, rating = ? WHERE book_id = ?',
         [title, description, rating, bookId],
@@ -379,6 +474,61 @@ app.put('/api/books/:id', (req, res) => {
             res.send({ message: 'Book updated successfully' });
         }
     );
+});
+
+// Editing a book
+app.put('/updateBooks/:id', upload.single('coverImage'), (req, res) => {
+    const bookId = req.params.id;
+    const { title, description, rating, userId } = req.body;
+    console.log("Are we even getting here?")
+    
+
+    // Start building the query and values array
+    let query = 'UPDATE books SET title = ?, description = ?, rating = ?';
+    let values = [title, description, rating];
+    
+    // If a new cover image was uploaded, add it to the update
+    if (req.file) {
+        const coverImageUrl = '/book-covers/' + req.file.filename;
+        query += ', cover_image_url = ?';
+        values.push(coverImageUrl);
+        
+        // Get the old cover image URL to delete it
+        db.query('SELECT cover_image_url FROM books WHERE book_id = ?', [bookId], (err, result) => {
+            if (!err && result[0]?.cover_image_url) {
+                const oldImagePath = path.join(__dirname, 'public/uploads', result[0].cover_image_url);
+                // Delete the old image file if it exists
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+        });
+    }
+    
+    // Add WHERE clause and bookId to values
+    query += ' WHERE book_id = ?';
+    values.push(bookId);
+
+    // Execute the update query
+    db.query(query, values, (err, result) => {
+        if (err) {
+            return res.status(500).send({ error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).send({ error: 'Book not found' });
+        }
+        
+        // Fetch and return the updated book
+        db.query('SELECT * FROM books WHERE book_id = ?', [bookId], (err, bookResult) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+            res.send(bookResult[0]);
+        });
+    });
+
+    console.log(query, values);
+
 });
 
 // Get User Info By ID
@@ -400,7 +550,24 @@ app.get('/api/users/:id', (req, res) => {
 });
 
 
+app.delete('/deleteBook/:bookId', (req, res) => {
+    const { bookId } = req.params;
 
+    // Ill worry about removing images from src at a later date.
+    console.log("Deleted???", bookId)
+    db.query('DELETE FROM books WHERE book_id = ?',
+        [bookId],
+        (err, result) => {
+            if (err) {
+                return res.status(500).send({ error: err.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).send({ error: 'Book not found' });
+            }
+            res.send({ message: 'deleted successfully' });
+        }
+    );
+});
 
 
 
@@ -411,8 +578,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-db.connect(err=>{
-    if(err) throw (err);
+db.connect(err => {
+    if (err) throw (err);
     console.log("DB Connected");
 })
 
